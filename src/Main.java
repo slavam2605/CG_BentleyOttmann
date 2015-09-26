@@ -35,7 +35,7 @@ public class Main {
                 panel.repaint();
             });
         }
-        BentleyOttmann.findIntersections(segments);
+        System.out.println(BentleyOttmann.findIntersections(segments));
     }
 
 }

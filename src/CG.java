@@ -44,4 +44,19 @@ public class CG {
         return (t1 * t2 <= 0) && (t3 * t4 <= 0);
     }
 
+    public static Point2D intersectionPoint(Segment2D a, Segment2D b) {
+        double x1 = a.getStart().x;
+        double x2 = a.getEnd().x;
+        double x3 = b.getStart().x;
+        double x4 = b.getEnd().x;
+        double y1 = a.getStart().y;
+        double y2 = a.getEnd().y;
+        double y3 = b.getStart().y;
+        double y4 = b.getEnd().y;
+        return new Point2D(
+                ((y1 * x2 - x1 * y2) * (x4 - x3) + (y3 * x4 - x3 * y4) * (x1 - x2)) / ((y1 - y2) * (x4 - x3) + (x1 - x2) * (y3 - y4)),
+                ((y1 * x2 - x1 * y2) * (y4 - y3) + (y3 * x4 - x3 * y4) * (y1 - y2)) / ((y1 - y2) * (x4 - x3) + (x1 - x2) * (y3 - y4))
+        );
+    }
+
 }

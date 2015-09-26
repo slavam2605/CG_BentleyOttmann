@@ -39,6 +39,20 @@ public class BentleyOttmann {
             return new Event(i, j, p.x, p.y, INTERSECTION);
         }
 
+        private static String str(int mode) {
+            switch (mode) {
+                case START: return "START";
+                case END: return "END";
+                case INTERSECTION: return "INTERSECTION";
+                default: return "UNKNOWN";
+            }
+        }
+
+        @Override
+        public String toString() {
+            return "(" + i + ", " + j + ", " + x + ", " + y + ", " + str(mode) + ")";
+        }
+
         @Override
         public int compareTo(@NotNull Event o) {
             if (x != o.x) {
@@ -58,8 +72,9 @@ public class BentleyOttmann {
     }
 
     public static List<Pair<Integer, Integer>> findIntersections(final List<Segment2D> segments) {
+        List<Pair<Integer, Integer>> result = new ArrayList<>();
         final Set<Pair<Integer, Integer>> done = new HashSet<>();
-        SortedSet<Integer> status = new TreeSet<>((Integer a, Integer b) -> {
+        NavigableSet<Integer> status = new TreeSet<>((Integer a, Integer b) -> {
             Segment2D as = segments.get(a);
             Segment2D bs = segments.get(b);
             if (done.contains(new Pair<>(a, b))) {
@@ -73,7 +88,78 @@ public class BentleyOttmann {
             events.add(Event.startEvent(i, segments.get(i).getStart()));
             events.add(Event.endEvent(i, segments.get(i).getEnd()));
         }
-        return null;
+        while (!events.isEmpty()) {
+            Event event = events.poll();
+            switch (event.mode) {
+                case Event.START:
+                    Integer lower = status.lower(event.i);
+                    Integer higher = status.higher(event.i);
+                    status.add(event.i);
+                    if (lower != null) {
+                        events.add(Event.intersectionEvent(
+                                        lower,
+                                        event.i,
+                                        CG.intersectionPoint(segments.get(lower), segments.get(event.i)))
+                        );
+                    }
+                    if (higher != null) {
+                        events.add(Event.intersectionEvent(
+                                        higher,
+                                        event.i,
+                                        CG.intersectionPoint(segments.get(higher), segments.get(event.i)))
+                        );
+                    }
+                    break;
+                case Event.END:
+                    lower = status.lower(event.i);
+                    higher = status.higher(event.i);
+                    status.remove(event.i);
+                    if (lower != null && higher != null) {
+                        events.add(Event.intersectionEvent(
+                                        lower,
+                                        higher,
+                                        CG.intersectionPoint(segments.get(lower), segments.get(higher)))
+                        );
+                    }
+                    break;
+                case Event.INTERSECTION:
+                    int i = event.i;
+                    int j = event.j;
+                    result.add(new Pair<>(i, j));
+                    //noinspection ConstantConditions
+                    if (status.comparator().compare(i, j) > 0) {
+                        int t = i;
+                        i = j;
+                        j = t;
+                    }
+                    status.remove(i);
+                    status.remove(j);
+                    done.add(new Pair<>(i, j));
+                    done.add(new Pair<>(j, i));
+                    status.add(i);
+                    status.add(j);
+                    lower = status.lower(j);
+                    higher = status.higher(i);
+                    if (lower != null) {
+                        events.add(Event.intersectionEvent(
+                                        lower,
+                                        j,
+                                        CG.intersectionPoint(segments.get(lower), segments.get(j)))
+                        );
+                    }
+                    if (higher != null) {
+                        events.add(Event.intersectionEvent(
+                                        higher,
+                                        i,
+                                        CG.intersectionPoint(segments.get(higher), segments.get(i)))
+                        );
+                    }
+                    break;
+                default:
+                    throw new RuntimeException("Unknown event: mode = " + event.mode);
+            }
+        }
+        return result;
     }
 
 }
