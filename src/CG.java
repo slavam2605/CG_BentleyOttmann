@@ -12,8 +12,8 @@ public class CG {
     public static int leftTurn(Point2D a, Point2D b, Point2D c) {
         double det = (c.x - a.x) * (b.y - a.y) - (c.y - a.y) * (b.x - a.x);
         double t = Math.abs((c.x - a.x) * (b.y - a.y)) + Math.abs((c.y - a.y) * (b.x - a.x));
-        if (Math.abs(det) >= EPS * t) {
-            return det < 0 ? -1 : det > 0 ? 1 : 0 ;
+        if (Math.abs(det) > EPS * t) {
+            return det < 0 ? -1 : 1 ;
         }
         BigFraction ax = new BigFraction(a.x);
         BigFraction ay = new BigFraction(a.y);
@@ -29,43 +29,19 @@ public class CG {
         return bdet.compareTo(BigFraction.ZERO);
     }
 
-    public static final int INTERSECTION = 1;
-    public static final int DISJOINT = -1;
-    public static final int OVERLAY = 0;
-    public static final int TOUCHING = 2;
-    public static final int POINT_TOUCHING = 3;
-
-    public static int intersects(Segment2D a, Segment2D b) {
+    public static boolean intersects(Segment2D a, Segment2D b) {
+        // check if AABBs are not overlapping
+        if (Math.max(a.getStart().x, a.getEnd().x) < Math.min(b.getStart().x, b.getEnd().x) ||
+            Math.max(a.getStart().y, a.getEnd().y) < Math.min(b.getStart().y, b.getEnd().y) ||
+            Math.max(b.getStart().x, b.getEnd().x) < Math.min(a.getStart().x, a.getEnd().x) ||
+            Math.max(b.getStart().y, b.getEnd().y) < Math.min(a.getStart().y, a.getEnd().y)) {
+            return false;
+        }
         int t1 = leftTurn(a.getStart(), a.getEnd(), b.getStart());
         int t2 = leftTurn(a.getStart(), a.getEnd(), b.getEnd());
         int t3 = leftTurn(b.getStart(), b.getEnd(), a.getStart());
         int t4 = leftTurn(b.getStart(), b.getEnd(), a.getEnd());
-        if (t1 * t2 < 0) {
-            if (t3 * t4 < 0) {
-                return INTERSECTION;
-            }
-            if (t3 * t4 > 0) {
-                return DISJOINT;
-            }
-            if (t3 + t4 != 0) {
-                return TOUCHING;
-            }
-        }
-        if (t1 * t2 > 0) {
-            return DISJOINT;
-        }
-        if (t1 + t2 != 0) {
-            if (t3 * t4 < 0) {
-                return TOUCHING;
-            }
-            if (t3 * t4 > 0) {
-                return DISJOINT;
-            }
-            if (t3 + t4 != 0) {
-                return POINT_TOUCHING;
-            }
-        }
-        return OVERLAY;
+        return (t1 * t2 <= 0) && (t3 * t4 <= 0);
     }
 
 }
