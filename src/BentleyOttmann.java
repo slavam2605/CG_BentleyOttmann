@@ -6,10 +6,11 @@ import java.util.*;
 /**
  * @author Моклев Вячеслав
  */
-public class BentleyOttmann {
+public class BentleyOttmann implements Iterator<Pair<Integer, Integer>>, Iterable<Pair<Integer, Integer>> {
 
     private static class Event implements Comparable<Event> {
         public static final int START = 0;
+
         public static final int END = 1;
         public static final int INTERSECTION = 2;
 
@@ -71,10 +72,23 @@ public class BentleyOttmann {
         return CG.leftTurn(p, s.getEnd(), s.getStart());
     }
 
-    public static List<Pair<Integer, Integer>> findIntersections(final List<Segment2D> segments) {
-        List<Pair<Integer, Integer>> result = new ArrayList<>();
-        final Set<Pair<Integer, Integer>> done = new HashSet<>();
-        NavigableSet<Integer> status = new TreeSet<>((Integer a, Integer b) -> {
+    // ------------------------------------------------------------------------------------------------------------
+
+    final List<Segment2D> segments;
+    final Set<Pair<Integer, Integer>> done;
+    NavigableSet<Integer> status;
+    PriorityQueue<Event> events;
+
+    public BentleyOttmann(List<Segment2D> segments) {
+        this.segments = segments;
+        done = new HashSet<>();
+        init();
+    }
+
+    private void init() {
+        // Arrange ends of segment in ascending order
+        segments.stream().filter(segment -> segment.getStart().compareTo(segment.getEnd()) > 0).forEach(Segment2D::swap);
+        status = new TreeSet<>((Integer a, Integer b) -> {
             Segment2D as = segments.get(a);
             Segment2D bs = segments.get(b);
             if (done.contains(new Pair<>(a, b))) {
@@ -83,11 +97,21 @@ public class BentleyOttmann {
                 return localize(as.getStart(), bs);
             }
         });
-        PriorityQueue<Event> events = new PriorityQueue<>();
+        events = new PriorityQueue<>();
         for (int i = 0; i < segments.size(); i++) {
             events.add(Event.startEvent(i, segments.get(i).getStart()));
             events.add(Event.endEvent(i, segments.get(i).getEnd()));
         }
+    }
+
+    @Override
+    public boolean hasNext() {
+        // TODO understand whether there are no more intersections
+        return !events.isEmpty();
+    }
+
+    @Override
+    public Pair<Integer, Integer> next() {
         while (!events.isEmpty()) {
             Event event = events.poll();
             switch (event.mode) {
@@ -95,14 +119,14 @@ public class BentleyOttmann {
                     Integer lower = status.lower(event.i);
                     Integer higher = status.higher(event.i);
                     status.add(event.i);
-                    if (lower != null) {
+                    if (lower != null && CG.intersects(segments.get(lower), segments.get(event.i))) {
                         events.add(Event.intersectionEvent(
                                         lower,
                                         event.i,
                                         CG.intersectionPoint(segments.get(lower), segments.get(event.i)))
                         );
                     }
-                    if (higher != null) {
+                    if (higher != null && CG.intersects(segments.get(higher), segments.get(event.i))) {
                         events.add(Event.intersectionEvent(
                                         higher,
                                         event.i,
@@ -114,7 +138,7 @@ public class BentleyOttmann {
                     lower = status.lower(event.i);
                     higher = status.higher(event.i);
                     status.remove(event.i);
-                    if (lower != null && higher != null) {
+                    if (lower != null && higher != null && CG.intersects(segments.get(lower), segments.get(higher))) {
                         events.add(Event.intersectionEvent(
                                         lower,
                                         higher,
@@ -125,7 +149,6 @@ public class BentleyOttmann {
                 case Event.INTERSECTION:
                     int i = event.i;
                     int j = event.j;
-                    result.add(new Pair<>(i, j));
                     //noinspection ConstantConditions
                     if (status.comparator().compare(i, j) > 0) {
                         int t = i;
@@ -140,26 +163,31 @@ public class BentleyOttmann {
                     status.add(j);
                     lower = status.lower(j);
                     higher = status.higher(i);
-                    if (lower != null) {
+                    if (lower != null && CG.intersects(segments.get(lower), segments.get(j))) {
                         events.add(Event.intersectionEvent(
                                         lower,
                                         j,
                                         CG.intersectionPoint(segments.get(lower), segments.get(j)))
                         );
                     }
-                    if (higher != null) {
+                    if (higher != null && CG.intersects(segments.get(higher), segments.get(i))) {
                         events.add(Event.intersectionEvent(
                                         higher,
                                         i,
                                         CG.intersectionPoint(segments.get(higher), segments.get(i)))
                         );
                     }
-                    break;
+                    return new Pair<>(i, j);
                 default:
                     throw new RuntimeException("Unknown event: mode = " + event.mode);
             }
         }
-        return result;
+        return null;
+    }
+
+    @Override
+    public Iterator<Pair<Integer, Integer>> iterator() {
+        return this;
     }
 
 }

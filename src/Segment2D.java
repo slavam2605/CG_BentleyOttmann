@@ -14,6 +14,12 @@ public class Segment2D {
         this(new Point2D(x1, y1), new Point2D(x2, y2));
     }
 
+    public void swap() {
+        Point2D t = start;
+        start = end;
+        end = t;
+    }
+
     public Point2D getStart() {
         return start;
     }
