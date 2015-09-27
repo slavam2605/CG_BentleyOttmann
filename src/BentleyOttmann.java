@@ -4,13 +4,12 @@ import org.jetbrains.annotations.NotNull;
 import java.util.*;
 
 /**
- * @author Ìîêëåâ Âÿ÷åñëàâ
+ * @author ĞœĞ¾ĞºĞ»ĞµĞ² Ğ’ÑÑ‡ĞµÑĞ»Ğ°Ğ²
  */
 public class BentleyOttmann implements Iterator<Pair<Integer, Integer>>, Iterable<Pair<Integer, Integer>> {
 
     private static class Event implements Comparable<Event> {
         public static final int START = 0;
-
         public static final int END = 1;
         public static final int INTERSECTION = 2;
 
@@ -78,6 +77,7 @@ public class BentleyOttmann implements Iterator<Pair<Integer, Integer>>, Iterabl
     final Set<Pair<Integer, Integer>> done;
     NavigableSet<Integer> status;
     PriorityQueue<Event> events;
+    Pair<Integer, Integer> cached;
 
     public BentleyOttmann(List<Segment2D> segments) {
         this.segments = segments;
@@ -102,16 +102,22 @@ public class BentleyOttmann implements Iterator<Pair<Integer, Integer>>, Iterabl
             events.add(Event.startEvent(i, segments.get(i).getStart()));
             events.add(Event.endEvent(i, segments.get(i).getEnd()));
         }
+        cached = null;
     }
 
     @Override
     public boolean hasNext() {
-        // TODO understand whether there are no more intersections
-        return !events.isEmpty();
+        cached = next();
+        return cached != null;
     }
 
     @Override
     public Pair<Integer, Integer> next() {
+        if (cached != null) {
+            Pair<Integer, Integer> result = cached;
+            cached = null;
+            return result;
+        }
         while (!events.isEmpty()) {
             Event event = events.poll();
             switch (event.mode) {
