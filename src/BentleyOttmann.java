@@ -2,6 +2,8 @@ import org.apache.commons.math3.util.Pair;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.ConcurrentSkipListSet;
 
 /**
  * @author Моклев Вячеслав
@@ -88,7 +90,7 @@ public class BentleyOttmann implements Iterator<Pair<Integer, Integer>>, Iterabl
     private void init() {
         // Arrange ends of segment in ascending order
         segments.stream().filter(segment -> segment.getStart().compareTo(segment.getEnd()) > 0).forEach(Segment2D::swap);
-        status = new TreeSet<>((Integer a, Integer b) -> {
+        status = new SkipList<>((Integer a, Integer b) -> {
             Segment2D as = segments.get(a);
             Segment2D bs = segments.get(b);
             if (done.contains(new Pair<>(a, b))) {
